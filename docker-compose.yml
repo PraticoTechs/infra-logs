@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  loki:
+    image: grafana/loki:2.9.0 # <--- FIXAR A VERSÃO AQUI
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml
+    networks:
+      - logging_net
+
+  promtail:
+    image: grafana/promtail:2.9.0 # <--- FIXAR A VERSÃO AQUI (idealmente a mesma do Loki)
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail-config.yaml:/etc/promtail/config.yaml
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - logging_net
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - logging_net
+    depends_on:
+      - loki
+
+networks:
+  logging_net:
+    driver: bridge
+
+volumes:
+  grafana-storage:
